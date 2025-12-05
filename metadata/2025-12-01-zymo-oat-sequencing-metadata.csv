@@ -1,0 +1,5 @@
+﻿sample,oat,day,fastq_1,fastq_2
+oat_4_d1,oat_4,day1,zr26742_1_R1.fastq.gz,zr26742_1_R2.fastq.gz
+oat_10_d1,oat_10,day1,zr26742_2_R1.fastq.gz,zr26742_2_R2.fastq.gz
+oat_4_d6,oat_4,day6,zr26742_3_R1.fastq.gz,zr26742_3_R2.fastq.gz
+oat_10_d6,oat_10,day6,zr26742_4_R1.fastq.gz,zr26742_4_R2.fastq.gz
