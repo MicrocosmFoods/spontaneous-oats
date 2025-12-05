@@ -4,7 +4,7 @@ import glob
 import os
 
 """
-Script to automate subsampling FASTQ reads with rasusa at different total number of reads
+Script to automate subsampling FASTQ reads with rasusa at different total number of reads.
 """
 
 def get_filenames(filename):
@@ -87,7 +87,7 @@ def run_rasusa(input_dir, num_reads_list, output_dir):
             subprocess.run(cmd, check=True, capture_output=True, text=True)
 
             if os.path.exists(output_fastq_file_1) and os.path.exists(output_fastq_file_2):
-                print(f"Wrote {base} samples subsampled at {read_depth} to {output_dir}!")
+                print(f"Wrote {base} sample subsampled at {read_depth} to {output_dir}/!")
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description = "Randomly subsample reads in a FASTQ file with Rasusua")
