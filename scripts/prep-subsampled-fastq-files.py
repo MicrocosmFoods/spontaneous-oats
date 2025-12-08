@@ -64,7 +64,7 @@ def rasusa_single_sample_command(base, r1, r2, read_depth, output_dir):
         subprocess.run(cmd, check=True, capture_output=True, text=True)
 
         if os.path.exists(output_fastq_file_1) and os.path.exists(output_fastq_file_2):
-            print(f"Wrote {base} sample subsampled at {read_depth} to {output_dir}/!")
+            print(f"Wrote {base} sample subsampled at {read_depth} to {output_dir}!")
             return(base, read_depth, True)
         else:
             return(base, read_depth, False)
