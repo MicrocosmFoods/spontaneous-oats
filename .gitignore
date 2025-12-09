@@ -1,5 +1,7 @@
+*.DS_Store*
 raw_data/
 .vscode/
 .Rhistory
 .RData
 *.Rproj*
+.Rproj.user

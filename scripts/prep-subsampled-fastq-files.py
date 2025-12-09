@@ -93,7 +93,7 @@ def run_rasusa(input_dir, num_reads_list, output_dir, num_threads =4):
         glob.glob(os.path.join(input_dir, "*.fastq"))
     )
 
-    # group reads into pairs dictionary so isn't iterating through every single file
+    # group reads into pairs dictionary of dictionaries so isn't iterating through every single file and just a set of the pair
     pairs = {}
     for file in fastq_files:
         base = get_filenames(file)
@@ -103,7 +103,7 @@ def run_rasusa(input_dir, num_reads_list, output_dir, num_threads =4):
         elif "_R2" in file:
             pairs[base]["R2"] = file
     
-    # create list of jobs depending on number of combo input fastq files + read depth
+    # create list of jobs depending on number of combo input fastq file pairs + read depth
     jobs = []
     for base, reads in pairs.items():
         r1 = reads.get("R1")

@@ -1,6 +1,8 @@
 library(tidyverse)
 library(colorspace)
 library(ggridges)
+library(scales)
+library(tidytext)
 
 #################################
 # Prep metadata and sylph profiles files
@@ -112,3 +114,88 @@ abundance_cat_df %>%
   facet_wrap(~ fct_rev(oat), nrow=2, scales="free_y") +
   theme_bw() +
   scale_y_discrete(expand=c(0,0))
+
+#################################
+# Random subsampling at 5M, 10M, 15M, 20M, and 25M read depth
+# Analyze how detection levels of species change with different read depths
+# The maximum read depth you can select at Zymo is 20M, and it could be higher than that, but still subsampled at 25M as well
+# Our samples were selected for 20M read depth, they came back ranging from min 60M reads to 160M reads
+# Now want to ask minimum coverage needed to retain detection of key species to sequence the remaining samples
+
+# Ask how many genomes detected drop out/remain per read depth
+# Ask how coverage/ANI changes for the detected genomes, probably need to require minimum 10X depth for the more abundant genomes for accuracy purposes downstream
+#################################
+
+subsampling_sylph_profiles <- read_tsv("results/2025-12-08-subsampled-profiling/combined_sylph_profiles.tsv") %>% 
+  mutate(accession_name = str_remove(Sample_file, "_n.*$")) %>% 
+  mutate(depth = str_match(Sample_file, "_n([^_]+)_")[,2]) %>% 
+  mutate(genome_accession = gsub(".fa", "", Genome_file)) %>% 
+  select(accession_name, depth, genome_accession, Sequence_abundance, Adjusted_ANI, Eff_cov, Contig_name)
+  
+subsampled_sylph_profiles_metadata <- left_join(subsampling_sylph_profiles, rep_mags_metadata) %>% 
+  left_join(sample_metadata)
+
+# summary stats per sample, depth 
+subsampled_sylph_profiles_stats <- subsampled_sylph_profiles_metadata %>% 
+  group_by(sample, depth, oat) %>%
+  summarise(
+    n_genomes = n_distinct(genome_accession),
+    percent_mapped = round(sum(Sequence_abundance, na.rm = TRUE), 3),
+    percent_unmapped = round(100 - sum(Sequence_abundance, na.rm = TRUE), 3),
+    .groups = "drop"
+  )
+
+# all stats for the original samples and the subsampled samples
+all_stats <- sylph_profiles_stats %>% 
+  mutate(depth = "original") %>% 
+  rbind(subsampled_sylph_profiles_stats)
+
+# plot for dropout of # of genomes detected 
+depth_order  <- c("original", "5000000", "10000000", "15000000", "20000000", "25000000")
+sample_order <- c("oat_4_d1", "oat_4_d6", "oat_10_d1", "oat_10_d6")
+
+all_stats_ordered <- all_stats %>% 
+  mutate(
+    depth  = factor(depth, levels = depth_order, ordered = TRUE),
+    sample = factor(sample, levels = sample_order, ordered = TRUE)
+  )
+
+all_stats_ordered %>% 
+  ggplot(aes(x=depth, y=n_genomes)) +
+  geom_col() +
+  facet_grid(~ sample) +
+  scale_y_continuous(expand = c(0,0))
+
+# heatmap of coverage for detected genomes with changing depth
+all_sylph_profiles_metadata <- sylph_profiles_metadata %>% 
+  mutate(depth = "original") %>% 
+  rbind(subsampled_sylph_profiles_metadata) %>% 
+  mutate(
+    depth  = factor(depth, levels = depth_order, ordered = TRUE),
+    sample = factor(sample, levels = sample_order, ordered = TRUE)
+  ) %>% 
+  mutate(genome_id = paste0(genome_accession, "_", species))
+
+all_sylph_profiles_metadata_ordered <- all_sylph_profiles_metadata %>%
+  group_by(sample, genome_id) %>%
+  # compute "original" coverage summary used for ordering
+  mutate(orig_cov = max(Eff_cov[depth == "original"], na.rm = TRUE)) %>%
+  ungroup() %>%
+  mutate(
+    genome_id_ord = reorder_within(genome_id, orig_cov, sample)
+  )
+
+
+coverage_profiles <- all_sylph_profiles_metadata_ordered %>% 
+  ggplot(aes(x = depth, y = genome_id_ord)) +
+  geom_tile(aes(fill = Eff_cov)) +
+  facet_wrap(~ sample, scales = "free_y") +
+  scale_fill_viridis_c(
+    trans = "log1p",
+    breaks = pretty_breaks(6)
+  ) +
+  scale_y_reordered(expand = c(0,0)) +
+  scale_x_discrete(expand=c(0,0)) +
+  theme(axis.text.x = element_text(angle = 80, hjust=1))
+
+ggsave("figures/oat-sequencing-random-subsampling-covg-profiles.png", coverage_profiles, width=15, height=7, units=c("in"))
