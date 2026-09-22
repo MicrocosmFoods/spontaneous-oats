@@ -146,21 +146,15 @@ genus_colors <- c(
 )
 
 # oat sample metadata
-oat_sample_metadata <- read_tsv("metadata/oat-sample-metadata.tsv")
-
 oat_order <- c("oat_4", "oat_9", "oat_10", "oat_16", "oat_17", "oat_18", "oat_19", "oat_22", "oat_23", "oat_26")
 
 
 # plot
 oat_abundance_plot <- abundance_df_labelled %>% 
-  left_join(oat_sample_metadata) %>% 
-  mutate(oat_type = paste0(oat, "\n", stringr::str_wrap(product_name, width = 23))) %>%  
-  mutate(oat_type = factor(oat_type, 
-                           levels = unique(oat_type[order(match(oat, oat_order))]))) %>% 
   mutate(day = gsub("day", "", day)) %>% 
   ggplot(aes(x=day, y=Sequence_abundance, fill=genus_label)) +
   geom_col() +
-  facet_wrap(~ oat_type, scales = "free_x", nrow = 2,
+  facet_wrap(~ oat, scales = "free_x", nrow = 2,
              labeller = as_labeller(function(x) x)) +
   theme_bw() +
   scale_x_discrete(expand=c(0,0)) +
@@ -282,3 +276,91 @@ coverage_profiles <- all_sylph_profiles_metadata_ordered %>%
   theme(axis.text.x = element_text(angle = 80, hjust=1))
 
 ggsave("figures/oat-sequencing-random-subsampling-covg-profiles.png", coverage_profiles, width=15, height=7, units=c("in"))
+
+
+#################################
+# Plot at different taxonomy levels until LAB/AAB are split out
+#################################
+sylph_profiles_metadata_tax <- sylph_profiles_metadata %>% 
+  select(-genus) %>% 
+  separate_wider_delim(
+    taxonomy,
+    delim=";",
+    names=c("phylum", "class", "order", "family", "genus")
+  )
+
+oat_order <- c("oat_4", "oat_9", "oat_10", "oat_16", "oat_17", "oat_18", "oat_19", "oat_22", "oat_23", "oat_26")
+
+# function for making plots at different taxonomy levels 
+plot_abundance <- function(df,
+                           tax_level,
+                           palette = "Set3",
+                           label = NULL,
+                           title = NULL) {
+  
+  label <- label %||% tax_level
+  title <- title %||% paste0(
+    "Sequence Abundance of ", label,
+    "-Level Taxa in Spontaneously Fermented Oat Samples"
+  )
+  
+  n <- dplyr::n_distinct(df[[tax_level]])
+  pal <- grDevices::colorRampPalette(
+    RColorBrewer::brewer.pal(
+      min(n, RColorBrewer::brewer.pal.info[palette, "maxcolors"]),
+      palette
+    )
+  )(n)
+  
+  df %>%
+    mutate(day = gsub("day", "", day)) %>%
+    ggplot(aes(x = day, y = Sequence_abundance, fill = .data[[tax_level]])) +
+    geom_col() +
+    facet_wrap(~ oat, scales = "free_x", nrow = 2,
+               labeller = as_labeller(function(x) x)) +
+    theme_bw() +
+    scale_x_discrete(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    scale_fill_manual(values = pal) +
+    guides(fill = guide_legend(ncol = 1)) +
+    theme(axis.text.x = element_text(size = 14),
+          axis.text.y = element_text(size = 14),
+          axis.title.x = element_text(size = 15),
+          axis.title.y = element_text(size = 15),
+          plot.title = element_text(face = "bold", size = 16),
+          legend.text = element_text(size = 14),
+          legend.title = element_text(size = 15),
+          strip.text = element_text(size = 15),
+          strip.background = element_rect(fill = "white", color = "black")) +
+    labs(x = "Sample Day", y = "% Sequence Abundance",
+         fill = label, title = title)
+}
+
+phylum_plot <- plot_abundance(
+  sylph_profiles_metadata_tax, "phylum",
+  palette="Paired",
+  label="Phylum"
+)
+
+class_plot <- plot_abundance(
+  sylph_profiles_metadata_tax, "class",
+  palette="Paired",
+  label="Class"
+)
+
+order_plot <- plot_abundance(
+  sylph_profiles_metadata_tax, "order",
+  palette="Set3",
+  label="Order"
+)
+
+family_plot <- plot_abundance(
+  sylph_profiles_metadata_tax, "family",
+  palette="Set3",
+  label="Family"
+)
+
+ggsave("figures/phylum-level-abundance.png", phylum_plot, width=15, height=9, units=c("in"))
+ggsave("figures/class-level-abundance.png", class_plot, width=15, height=9, units=c("in"))
+ggsave("figures/order-level-abundance.png", order_plot, width=15, height=9, units=c("in"))
+ggsave("figures/family-level-abundance.png", family_plot, width=15, height=9, units=c("in"))
