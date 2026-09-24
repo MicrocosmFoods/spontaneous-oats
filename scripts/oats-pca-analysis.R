@@ -53,6 +53,18 @@ p_oat_day <- ggplot(scores, aes(PCoA1, PCoA2, color=oat, shape=day)) +
   axis_labs +
   theme_bw()
 
-ggsave("figures/bc-pcoa-oat-day.png", p_oat_day, width=8, height=5, units=c("in"))
+p_oat_day_traj <- scores %>% 
+  arrange(oat, day) %>% 
+  ggplot(aes(PCoA1, PCoA2, color = oat)) +
+  geom_path(aes(group = oat), linewidth = 0.6, alpha = 0.6,
+            arrow = arrow(length = unit(0.15, "cm"), type = "closed")) +
+  geom_point(aes(shape = day), size = 3.5) +
+  scale_color_manual(values = oat_cols) +
+  axis_labs +
+  theme_bw()
 
+p_oat_day_traj
+
+ggsave("figures/bc-pcoa-oat-day.png", p_oat_day, width=8, height=5, units=c("in"))
+ggsave("figures/bc-pcoa-oat-day-traj.png", p_oat_day_traj, width=8, height=5, units=c("in"))
 
