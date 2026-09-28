@@ -1,0 +1,12 @@
+﻿sample_id,sample_type,sample_condition
+XKQB9L_1,oat,oat_4_t0
+XKQB9L_2,oat,oat_4_t1
+XKQB9L_3,oat,oat_4_t3
+XKQB9L_4,oat,oat_4_t8
+XKQB9L_5,oat,oat_10_t0
+XKQB9L_6,oat,oat_10_t2
+XKQB9L_7,oat,oat_10_t3
+XKQB9L_8,oat,oat_10_t8
+XKQB9L_11,control,PDTC
+XKQB9L_12,control,LPS+
+XKQB9L_13,control,LPS-
